@@ -26,6 +26,10 @@ class QueueHealthPingJob implements ShouldQueue
 
     public function handle(PingUrlBuilderFactory $factory, Pinger $pinger): void
     {
+        if (!config('healthchecker.enabled', true)) {
+            return;
+        }
+
         try {
             $url = $factory->forQueueCheck($this->checkName)->success();
         } catch (HealthCheckerConfigurationException $e) {

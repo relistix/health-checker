@@ -4,6 +4,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Master on/off switch
+    |--------------------------------------------------------------------------
+    | When disabled, the scheduled commands and the queue probe job all
+    | short-circuit without dispatching, sending mail, or pinging
+    | Healthchecks.io. Useful for local and dev environments where you do
+    | not want probe traffic to reach Healthchecks.io.
+    */
+    'enabled' => env('HEALTHCHECKER_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Healthchecks.io base URL
     |--------------------------------------------------------------------------
     | Default to the public hosted Healthchecks.io endpoint. Override for a

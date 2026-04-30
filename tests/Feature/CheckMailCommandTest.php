@@ -54,6 +54,21 @@ class CheckMailCommandTest extends TestCase
         Log::shouldHaveReceived('error')->atLeast()->once();
     }
 
+    public function test_disabled_short_circuits_without_sending(): void
+    {
+        config()->set('healthchecker.enabled', false);
+        config()->set('healthchecker.mail_checks.alpha', [
+            'recipient' => 'probe@example.com',
+        ]);
+
+        Mail::fake();
+
+        $this->artisan('healthchecker:check-mail', ['check' => 'alpha'])
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
     public function test_missing_recipient_returns_failure(): void
     {
         config()->set('healthchecker.mail_checks.broken', []);

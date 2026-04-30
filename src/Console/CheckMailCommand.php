@@ -5,12 +5,15 @@ namespace Relistix\HealthChecker\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Relistix\HealthChecker\Console\Concerns\ReportsConfigurationFailure;
 use Relistix\HealthChecker\Exceptions\HealthCheckerConfigurationException;
 use Relistix\HealthChecker\Mail\HealthCheckMailable;
 use Throwable;
 
 class CheckMailCommand extends Command
 {
+    use ReportsConfigurationFailure;
+
     protected $signature = 'healthchecker:check-mail
                             {check=default : Name of the mail check (key in healthchecker.mail_checks)}
                             {--to= : Override the recipient email address from config}';
@@ -19,30 +22,28 @@ class CheckMailCommand extends Command
 
     public function handle(): int
     {
+        if (!config('healthchecker.enabled', true)) {
+            $this->info('Healthchecker is disabled; skipping mail probe.');
+            return self::SUCCESS;
+        }
+
         $name = (string) $this->argument('check');
         $cfg = config("healthchecker.mail_checks.{$name}");
 
         if (!is_array($cfg)) {
-            $message = "Healthchecker mail check [{$name}] is not configured.";
-            Log::error($message, ['check' => $name]);
-            $this->error($message);
-            return self::FAILURE;
+            return $this->failWith(HealthCheckerConfigurationException::unknownCheck('mail', $name), $name);
         }
 
         $to = $this->option('to') ?: ($cfg['recipient'] ?? null);
         if (empty($to)) {
-            $e = HealthCheckerConfigurationException::missingMailRecipient($name);
-            Log::error($e->getMessage(), ['check' => $name]);
-            $this->error($e->getMessage());
-            return self::FAILURE;
+            return $this->failWith(HealthCheckerConfigurationException::missingMailRecipient($name), $name);
         }
 
         $subject = $cfg['subject'] ?? 'Healthchecks.io mail probe';
-        $mailer = $cfg['mailer'] ?? null;
+        $mailer = ($cfg['mailer'] ?? '') ?: null;
 
         try {
-            $mailerInstance = $mailer ? Mail::mailer($mailer) : Mail::mailer();
-            $mailerInstance->to($to)->send(new HealthCheckMailable($name, $subject));
+            Mail::mailer($mailer)->to($to)->send(new HealthCheckMailable($name, $subject));
         } catch (Throwable $e) {
             Log::error('Failed to send healthchecker mail probe', [
                 'check' => $name,

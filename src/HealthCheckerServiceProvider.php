@@ -16,18 +16,17 @@ class HealthCheckerServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/healthchecker.php', 'healthchecker');
 
-        $this->app->singleton(PingUrlBuilderFactory::class, function ($app) {
-            return new PingUrlBuilderFactory($app['config']);
-        });
+        $this->app->singleton(
+            PingUrlBuilderFactory::class,
+            fn ($app) => new PingUrlBuilderFactory($app['config']),
+        );
 
-        $this->app->singleton(Pinger::class, function ($app) {
-            return new Pinger(
-                $app->make(HttpFactory::class),
-                $app->make(LoggerInterface::class),
-                (int) $app['config']->get('healthchecker.http.timeout', 5),
-                (int) $app['config']->get('healthchecker.http.retries', 0),
-            );
-        });
+        $this->app->singleton(Pinger::class, fn ($app) => new Pinger(
+            $app->make(HttpFactory::class),
+            $app->make(LoggerInterface::class),
+            (int) $app['config']->get('healthchecker.http.timeout', 5),
+            (int) $app['config']->get('healthchecker.http.retries', 0),
+        ));
     }
 
     public function boot(): void

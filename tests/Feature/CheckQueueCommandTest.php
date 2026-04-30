@@ -23,7 +23,9 @@ class CheckQueueCommandTest extends TestCase
             ->assertExitCode(0);
 
         Queue::assertPushedOn('probes', QueueHealthPingJob::class, function ($job) {
-            return $job->checkName === 'alpha';
+            return $job->checkName === 'alpha'
+                && $job->queue === 'probes'
+                && $job->connection === 'redis';
         });
     }
 
@@ -52,6 +54,22 @@ class CheckQueueCommandTest extends TestCase
 
         Queue::assertNothingPushed();
         Log::shouldHaveReceived('error')->atLeast()->once();
+    }
+
+    public function test_disabled_short_circuits_without_dispatching(): void
+    {
+        config()->set('healthchecker.enabled', false);
+        config()->set('healthchecker.queue_checks.alpha', [
+            'uuid' => 'alpha-uuid',
+            'queue' => 'probes',
+        ]);
+
+        Queue::fake();
+
+        $this->artisan('healthchecker:check-queue', ['check' => 'alpha'])
+            ->assertExitCode(0);
+
+        Queue::assertNothingPushed();
     }
 
     public function test_missing_queue_name_returns_failure(): void

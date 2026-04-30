@@ -55,6 +55,15 @@ Each is seeded with a `default` entry. Add more entries to monitor multiple queu
 
 Multiple checks: copy the `default` entry under `queue_checks` or `mail_checks`, give it a new key, point it at different env vars.
 
+### Master on/off switch
+
+Set `HEALTHCHECKER_ENABLED=false` (default: `true`) to short-circuit every part of the package. Both scheduled commands return `SUCCESS` without dispatching or sending mail, and `QueueHealthPingJob::handle()` no-ops if a job was already on the queue when the flag flipped. Use this to silence probe traffic in local and dev environments without removing the scheduled commands or unsetting your check UUIDs.
+
+### HTTP client tuning
+
+- `HEALTHCHECKER_HTTP_TIMEOUT` — request timeout in seconds (default `5`).
+- `HEALTHCHECKER_HTTP_RETRIES` — extra retries on failure (default `0`, i.e. one attempt total).
+
 ---
 
 ## Commands
@@ -125,7 +134,7 @@ use Relistix\HealthChecker\Support\Pinger;
 
 public function runImport(PingUrlBuilderFactory $factory, Pinger $pinger): void
 {
-    $urls = $factory->forQueueCheck('imports');
+    $urls = $factory->forQueueCheck('imports'); // or $factory->forMailCheck('reports')
 
     $pinger->ping($urls->start());
 
@@ -138,6 +147,8 @@ public function runImport(PingUrlBuilderFactory $factory, Pinger $pinger): void
     }
 }
 ```
+
+Both factory methods return a `Relistix\HealthChecker\Contracts\PingUrlBuilder` — typehint against the contract in your own code if you want to fake it in tests.
 
 Available URL variants on `PingUrlBuilder`:
 

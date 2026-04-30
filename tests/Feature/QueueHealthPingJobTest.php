@@ -29,6 +29,25 @@ class QueueHealthPingJobTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://hc-ping.com/alpha-uuid');
     }
 
+    public function test_job_short_circuits_when_disabled(): void
+    {
+        config()->set('healthchecker.enabled', false);
+        config()->set('healthchecker.queue_checks.alpha', [
+            'uuid' => 'alpha-uuid',
+            'queue' => 'alpha',
+        ]);
+
+        Http::fake();
+
+        $job = new QueueHealthPingJob('alpha');
+        $job->handle(
+            $this->app->make(\Relistix\HealthChecker\Support\PingUrlBuilderFactory::class),
+            $this->app->make(\Relistix\HealthChecker\Support\Pinger::class),
+        );
+
+        Http::assertNothingSent();
+    }
+
     public function test_job_logs_and_swallows_when_check_missing(): void
     {
         Http::fake();

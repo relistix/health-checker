@@ -48,6 +48,7 @@ class QueueHealthPingJob implements ShouldQueue
         }
 
         $pinger->ping($url, [
+            'app' => config('app.name'),
             'check' => $this->checkName,
             'queue' => $this->queue,
             'connection' => $this->connection,

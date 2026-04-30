@@ -29,6 +29,7 @@ class HealthCheckMailable extends Mailable
         return new Content(
             text: 'healthchecker::mail.probe',
             with: [
+                'appName' => config('app.name'),
                 'checkName' => $this->checkName,
                 'host' => gethostname() ?: 'unknown',
                 'timestamp' => now()->toIso8601String(),

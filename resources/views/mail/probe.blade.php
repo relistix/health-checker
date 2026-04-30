@@ -1,5 +1,6 @@
 Healthchecks.io mail availability probe.
 
+App:       {{ $appName }}
 Check:     {{ $checkName }}
 Host:      {{ $host }}
 Timestamp: {{ $timestamp }}
